@@ -62,6 +62,7 @@ public class PlayerCubeBehavior : TrueSyncBehaviour {
 		int vertical_input = (int)(Input.GetAxis("Vertical") * 100);
 		TrueSyncInput.SetInt(INPUT_KEY_MOVE_VERTICAL, vertical_input);
 
+		TrueSyncInput.SetByte(INPUT_KEY_JUMP,Input.GetButton("Jump")? (byte)1 : (byte)0);
 	}
 
     /**
@@ -88,6 +89,15 @@ public class PlayerCubeBehavior : TrueSyncBehaviour {
 
 		tsRigidBody.AddForce(appliedForce);
 
+		if (TrueSyncInput.GetByte (INPUT_KEY_JUMP) == (byte)1) {
+			if (owner.Id == 1) {
+
+				tsRigidBody.position = new TSVector(1,0,0);
+			} else {
+
+				tsRigidBody.position = new TSVector(-1, 0,0);
+			}
+		}
 	}
 		
 }
