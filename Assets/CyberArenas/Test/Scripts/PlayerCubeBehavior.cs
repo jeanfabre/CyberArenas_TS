@@ -24,6 +24,24 @@ public class PlayerCubeBehavior : TrueSyncBehaviour {
     **/
     public int SpeedFactor = 5;
 
+	/**
+	 * Added by Aaron to reuse code
+	 * Resets position and stops motion
+	 **/
+	private void ResetPosition () {
+		// Sets sprite and animator controller based on player's id
+		if (owner.Id == 1) {
+
+			tsRigidBody.position = new TSVector(1,0,0);
+		} else {
+
+			tsRigidBody.position = new TSVector(-1, 0,0);
+		}
+		TSVector velocity = tsRigidBody.velocity;
+		velocity.x = velocity.y = (FP)0;
+		tsRigidBody.velocity = velocity;
+	}
+
 	/// <summary>
 	/// The force.
 	/// </summary>
@@ -39,17 +57,7 @@ public class PlayerCubeBehavior : TrueSyncBehaviour {
     **/
     public override void OnSyncedStart () {
 		tsRigidBody = GetComponent<TSRigidBody>();
-
-
-        // Sets sprite and animator controller based on player's id
-		if (owner.Id == 1) {
-			
-			tsRigidBody.position = new TSVector(1,0,0);
-		} else {
-	
-			tsRigidBody.position = new TSVector(-1, 0,0);
-		}
-			
+		ResetPosition ();
     }
 		
     /**
@@ -75,10 +83,6 @@ public class PlayerCubeBehavior : TrueSyncBehaviour {
         // Set a velocity based on player's speed and inputs
 		TSVector velocity = tsRigidBody.velocity;
 		velocity.x = TrueSyncInput.GetInt(INPUT_KEY_MOVE_HORIZONTAL) * SpeedFactor / (FP) 100;
-
-		// do lerping
-
-        // Assigns this velocity as new player's linear velocity
 		tsRigidBody.velocity = velocity;
 
 		// Vertical Movement
@@ -89,14 +93,9 @@ public class PlayerCubeBehavior : TrueSyncBehaviour {
 
 		tsRigidBody.AddForce(appliedForce);
 
+
 		if (TrueSyncInput.GetByte (INPUT_KEY_JUMP) == (byte)1) {
-			if (owner.Id == 1) {
-
-				tsRigidBody.position = new TSVector(1,0,0);
-			} else {
-
-				tsRigidBody.position = new TSVector(-1, 0,0);
-			}
+			ResetPosition ();
 		}
 	}
 		
