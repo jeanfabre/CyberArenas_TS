@@ -22,11 +22,12 @@ public class PlayerCubeBehavior : TrueSyncBehaviour {
     /**
     * @brief Player's movement speed.
     **/
-    public int SpeedFactor = 5;
+    //public int SpeedFactor = 5;
+	public int AngularVelocityFactor = 5;
 
 	/**
 	 * Added by Aaron to reuse code
-	 * Resets position and stops motion
+	 * Resets position and stops motion 
 	 **/
 	private void ResetPosition () {
 		// Sets sprite and animator controller based on player's id
@@ -79,11 +80,17 @@ public class PlayerCubeBehavior : TrueSyncBehaviour {
     public override void OnSyncedUpdate () {
 
 
-		// Horozontal Movement
-        // Set a velocity based on player's speed and inputs
-		TSVector velocity = tsRigidBody.velocity;
-		velocity.x = TrueSyncInput.GetInt(INPUT_KEY_MOVE_HORIZONTAL) * SpeedFactor / (FP) 100;
-		tsRigidBody.velocity = velocity;
+		//// Horozontal Movement
+        //// Set a velocity based on player's speed and inputs
+		//TSVector velocity = tsRigidBody.velocity;
+		//velocity.x = TrueSyncInput.GetInt(INPUT_KEY_MOVE_HORIZONTAL) * SpeedFactor / (FP) 100;
+		//tsRigidBody.velocity = velocity;
+
+		// Rotate around Z
+		// Set a velocity based on player's speed and inputs
+		TSVector angularVelocity = tsRigidBody.angularVelocity;
+		angularVelocity.z = -(TrueSyncInput.GetInt(INPUT_KEY_MOVE_HORIZONTAL) * AngularVelocityFactor / (FP) 100);
+		tsRigidBody.angularVelocity = angularVelocity;
 
 		// Vertical Movement
 		FP horizontal_input = TrueSyncInput.GetInt(INPUT_KEY_MOVE_VERTICAL) / (FP) 100;
