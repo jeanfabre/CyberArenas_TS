@@ -4,6 +4,13 @@ using TrueSync;
 
 public class PlayerCubeBehavior : TrueSyncBehaviour {
 
+	public FP ZRot;
+	public FP ZAbs;
+	public FP ZCosRot;
+	public FP ZSinRot;
+	public FP ZCosRotAbs;
+	public FP ZSinRotAbs;
+
     /**
     * @brief Key to set/get player's movement from {@link TrueSyncInput}.
     **/
@@ -92,13 +99,27 @@ public class PlayerCubeBehavior : TrueSyncBehaviour {
 		angularVelocity.z = -(TrueSyncInput.GetInt(INPUT_KEY_MOVE_HORIZONTAL) * AngularVelocityFactor / (FP) 100);
 		tsRigidBody.angularVelocity = angularVelocity;
 
-		// Vertical Movement
+		//// Vertical Movement
 		FP horizontal_input = TrueSyncInput.GetInt(INPUT_KEY_MOVE_VERTICAL) / (FP) 100;
+		//TSVector appliedForce = new TSVector (FP.Zero, horizontal_input * (FP)ForceFacter, FP.Zero);
+		//tsRigidBody.AddForce(appliedForce);
 
-
-		TSVector appliedForce = new TSVector (FP.Zero, horizontal_input * (FP)ForceFacter, FP.Zero);
-
+		FP zRotation = tsRigidBody.rotation.z.AsFloat ();
+		FP absoluteForce = horizontal_input * (FP)ForceFacter;
+		TSVector appliedForce = new TSVector (FP.Cos (zRotation) * absoluteForce, FP.Sin (zRotation) * absoluteForce, FP.Zero);
 		tsRigidBody.AddForce(appliedForce);
+		ZRot = zRotation;
+		ZAbs = absoluteForce;
+		ZCosRot = FP.Cos (zRotation);
+		ZSinRot = FP.Sin (zRotation);
+		ZCosRotAbs = FP.Cos (zRotation) * absoluteForce;
+		ZSinRotAbs = FP.Sin (zRotation) * absoluteForce;
+
+		//string logString = new string (zRotation);
+		//Debug.Log ("zRotation = " + logString);
+
+
+		//TSVector forceVectororce = TSVector();
 
 
 		if (TrueSyncInput.GetByte (INPUT_KEY_JUMP) == (byte)1) {
