@@ -1,15 +1,13 @@
 ﻿using UnityEngine;
 using TrueSync;
 
-
+/// <summary>
+/// Player cube behavior.
+/// TODO: fix fire rate
+/// TODO: implement bullet trigger to affect health or kill player
+/// </summary>
 public class PlayerCubeBehavior : TrueSyncBehaviour {
 
-	public FP ZRot;
-	public FP ZAbs;
-	public FP ZCosRot;
-	public FP ZSinRot;
-	public FP ZCosRotAbs;
-	public FP ZSinRotAbs;
 
     /**
     * @brief Key to set/get player's movement from {@link TrueSyncInput}.
@@ -26,11 +24,23 @@ public class PlayerCubeBehavior : TrueSyncBehaviour {
     **/
     private const byte INPUT_KEY_JUMP = 2;
 
+	/**
+    * @brief Key to set/get player's Fire from {@link TrueSyncInput}.
+    **/
+	private const byte INPUT_KEY_FIRE = 3;
+
+	public GameObject BulletPrefab;
+
     /**
     * @brief Player's movement speed.
     **/
     //public int SpeedFactor = 5;
 	public int AngularVelocityFactor = 5;
+
+	/// <summary>
+	/// The last fire frame.
+	/// </summary>
+	int lastFireFrame;
 
 	/**
 	 * Added by Aaron to reuse code
@@ -78,20 +88,16 @@ public class PlayerCubeBehavior : TrueSyncBehaviour {
 		int vertical_input = (int)(Input.GetAxis("Vertical") * 100);
 		TrueSyncInput.SetInt(INPUT_KEY_MOVE_VERTICAL, vertical_input);
 
-		TrueSyncInput.SetByte(INPUT_KEY_JUMP,Input.GetButton("Jump")? (byte)1 : (byte)0);
+		TrueSyncInput.SetByte(INPUT_KEY_JUMP,Input.GetButtonDown("Jump")? (byte)1 : (byte)0);
+
+		TrueSyncInput.SetByte(INPUT_KEY_FIRE,Input.GetButtonDown("Fire1")? (byte)1 : (byte)0);
+
 	}
 
     /**
     * @brief Updates player and movements.
     **/
     public override void OnSyncedUpdate () {
-
-
-		//// Horozontal Movement
-        //// Set a velocity based on player's speed and inputs
-		//TSVector velocity = tsRigidBody.velocity;
-		//velocity.x = TrueSyncInput.GetInt(INPUT_KEY_MOVE_HORIZONTAL) * SpeedFactor / (FP) 100;
-		//tsRigidBody.velocity = velocity;
 
 		// Rotate around Z
 		// Set a velocity based on player's speed and inputs
@@ -101,35 +107,29 @@ public class PlayerCubeBehavior : TrueSyncBehaviour {
 
 		//// Vertical Movement
 		FP horizontal_input = TrueSyncInput.GetInt(INPUT_KEY_MOVE_VERTICAL) / (FP) 100;
-		//TSVector appliedForce = new TSVector (FP.Zero, horizontal_input * (FP)ForceFacter, FP.Zero);
-		//tsRigidBody.AddForce(appliedForce);
-
-//		FP zRotation = tsRigidBody.rotation.eulerAngles.z + (FP) 180.0;
 		FP absoluteForce = horizontal_input * (FP)ForceFacter;
-//		TSVector appliedForce = new TSVector (FP.Cos (zRotation) * absoluteForce, FP.Sin (zRotation) * absoluteForce, FP.Zero);
-//		tsRigidBody.AddForce(appliedForce);
-//		ZRot = zRotation;
-//		ZAbs = absoluteForce;
-//		ZCosRot = FP.Cos (zRotation);
-//		ZSinRot = FP.Sin (zRotation);
-//		ZCosRotAbs = FP.Cos (zRotation) * absoluteForce;
-//		ZSinRotAbs = FP.Sin (zRotation) * absoluteForce;
-
-
 		tsRigidBody.AddForce(tsRigidBody.tsTransform.up * absoluteForce);
 			
-	
-
-		//string logString = new string (zRotation);
-		//Debug.Log ("zRotation = " + logString);
-
-
-		//TSVector forceVectororce = TSVector();
+		if (TrueSyncInput.GetByte (INPUT_KEY_FIRE) == (byte)1) {
+			Fire ();
+		}
 
 
 		if (TrueSyncInput.GetByte (INPUT_KEY_JUMP) == (byte)1) {
 			ResetPosition ();
 		}
+
+
 	}
+
+	void Fire()
+	{
+		if (lastFireFrame != Time.frameCount) {
+			TrueSyncManager.SyncedInstantiate (this.BulletPrefab, tsTransform.position + tsTransform.up * (FP)3f, tsTransform.rotation);
+			lastFireFrame = Time.frameCount;
+		}
+
+	}
+
 		
 }
