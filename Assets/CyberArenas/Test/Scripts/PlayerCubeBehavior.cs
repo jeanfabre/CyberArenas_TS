@@ -104,16 +104,21 @@ public class PlayerCubeBehavior : TrueSyncBehaviour {
 		//TSVector appliedForce = new TSVector (FP.Zero, horizontal_input * (FP)ForceFacter, FP.Zero);
 		//tsRigidBody.AddForce(appliedForce);
 
-		FP zRotation = tsRigidBody.rotation.z.AsFloat ();
+//		FP zRotation = tsRigidBody.rotation.eulerAngles.z + (FP) 180.0;
 		FP absoluteForce = horizontal_input * (FP)ForceFacter;
-		TSVector appliedForce = new TSVector (FP.Cos (zRotation) * absoluteForce, FP.Sin (zRotation) * absoluteForce, FP.Zero);
-		tsRigidBody.AddForce(appliedForce);
-		ZRot = zRotation;
-		ZAbs = absoluteForce;
-		ZCosRot = FP.Cos (zRotation);
-		ZSinRot = FP.Sin (zRotation);
-		ZCosRotAbs = FP.Cos (zRotation) * absoluteForce;
-		ZSinRotAbs = FP.Sin (zRotation) * absoluteForce;
+//		TSVector appliedForce = new TSVector (FP.Cos (zRotation) * absoluteForce, FP.Sin (zRotation) * absoluteForce, FP.Zero);
+//		tsRigidBody.AddForce(appliedForce);
+//		ZRot = zRotation;
+//		ZAbs = absoluteForce;
+//		ZCosRot = FP.Cos (zRotation);
+//		ZSinRot = FP.Sin (zRotation);
+//		ZCosRotAbs = FP.Cos (zRotation) * absoluteForce;
+//		ZSinRotAbs = FP.Sin (zRotation) * absoluteForce;
+
+
+		tsRigidBody.AddForce(tsRigidBody.tsTransform.up * absoluteForce);
+			
+	
 
 		//string logString = new string (zRotation);
 		//Debug.Log ("zRotation = " + logString);
