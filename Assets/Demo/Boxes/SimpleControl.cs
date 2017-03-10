@@ -22,11 +22,6 @@ public class SimpleControl : TrueSyncBehaviour {
     private const byte INPUT_KEY_CREATE = 2;
 
     /**
-    * @brief Instance of {@link TSRigidBody} that is being controlled.
-    **/
-    private TSRigidBody controlledBody;
-
-    /**
     * @brief It is true if the ball is not dynamically instantiated.
     **/
     public bool createdRuntime;
@@ -46,15 +41,13 @@ public class SimpleControl : TrueSyncBehaviour {
     * @brief Initial setup when game is started.
     **/
     public override void OnSyncedStart () {
-		controlledBody = this.GetComponent<TSRigidBody> ();
-
         // if is first player then changes ball's color to black
 		if (owner != null && owner.Id == 1) {
 			GetComponent<Renderer> ().material.color = Color.black;
 		}
 
         if (!createdRuntime) {
-            controlledBody.position = new TrueSync.TSVector(-3 + (owner.Id - 1) * 4, 1, 16);
+            tsRigidBody.position = new TrueSync.TSVector(-3 + (owner.Id - 1) * 4, 1, 16);
         }
 	}
 
@@ -72,7 +65,7 @@ public class SimpleControl : TrueSyncBehaviour {
 
         TrueSyncInput.SetInt(INPUT_KEY_HORIZONTAL, (int)(hor * 100));
         TrueSyncInput.SetInt(INPUT_KEY_VERTICAL, (int)(ver * 100));
-        TrueSyncInput.SetInt(INPUT_KEY_CREATE, space ? 1 : 0);
+        TrueSyncInput.SetBool(INPUT_KEY_CREATE, space);
     }
 
     /**
@@ -81,7 +74,7 @@ public class SimpleControl : TrueSyncBehaviour {
     public override void OnSyncedUpdate() {
 		FP hor = (FP) TrueSyncInput.GetInt(INPUT_KEY_HORIZONTAL) / 100;
 		FP ver = (FP) TrueSyncInput.GetInt(INPUT_KEY_VERTICAL) / 100;
-        bool currentCreateState = TrueSyncInput.GetInt(INPUT_KEY_CREATE) == 1;
+        bool currentCreateState = TrueSyncInput.GetBool(INPUT_KEY_CREATE);
 
         // Instantiates a new ball belonging to current player if the following criteria is true
         if (!lastCreateState && currentCreateState && !createdRuntime) {
@@ -104,7 +97,7 @@ public class SimpleControl : TrueSyncBehaviour {
             forceToApply.z = ver / 3;
         }
 
-        controlledBody.AddForce(forceToApply, ForceMode.Impulse);
+        tsRigidBody.AddForce(forceToApply, ForceMode.Impulse);
 
         lastCreateState = currentCreateState;
     }

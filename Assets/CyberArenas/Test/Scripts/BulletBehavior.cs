@@ -1,4 +1,6 @@
-﻿using System.Collections;
+﻿using System;
+
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -25,8 +27,29 @@ public class BulletBehavior : TrueSyncBehaviour {
 		tsRigidBody = GetComponent<TSRigidBody>();
 
 		tsRigidBody.velocity = tsRigidBody.tsTransform.up * (FP)SpeedFactor;
+
+		//TrueSyncManager.SyncedStartCoroutine (KillTimeOut());
 	}
 
+
+	public void OnSyncedTriggerEnter(TSCollision otherBody) {
+		if (otherBody.gameObject.tag ==  "Player") {
+			
+			//score++;
+			//UpdateScore();
+			//otherBody.gameObject.SendMessage("GoalScored");
+			//gameEndHandler.gameObject.SendMessage("GoalScored", this);
+			TrueSyncManager.SyncedDestroy(this.gameObject);
+		}
+	}
+
+	IEnumerator KillTimeOut()
+	{
+	//	yield return TrueSyncManager.
+
+	//	TrueSyncManager.SyncedDestroy(this.gameObject);
+		yield return null;
+	}
 
 
 }

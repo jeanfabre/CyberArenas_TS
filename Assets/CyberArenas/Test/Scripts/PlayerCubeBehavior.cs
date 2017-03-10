@@ -63,7 +63,7 @@ public class PlayerCubeBehavior : TrueSyncBehaviour {
 	/// <summary>
 	/// The force.
 	/// </summary>
-	public int ForceFacter = 5;
+	public int ForceFactor = 5;
 
     /**
     * @brief Controlled {@link TSRigidBody} of the player.
@@ -107,7 +107,7 @@ public class PlayerCubeBehavior : TrueSyncBehaviour {
 
 		//// Vertical Movement
 		FP horizontal_input = TrueSyncInput.GetInt(INPUT_KEY_MOVE_VERTICAL) / (FP) 100;
-		FP absoluteForce = horizontal_input * (FP)ForceFacter;
+		FP absoluteForce = horizontal_input * (FP)ForceFactor;
 		tsRigidBody.AddForce(tsRigidBody.tsTransform.up * absoluteForce);
 			
 		if (TrueSyncInput.GetByte (INPUT_KEY_FIRE) == (byte)1) {

@@ -84,6 +84,54 @@ namespace TrueSync {
             }
         }
 
+        [SerializeField]
+        private FP _linearDrag;
+
+        /**
+         *  @brief Linear drag coeficient.
+         **/
+        public FP drag {
+            get {
+                if (tsCollider.IsBodyInitialized) {
+                    return tsCollider.Body.TSLinearDrag;
+                }
+
+                return _linearDrag;
+            }
+
+            set {
+                _linearDrag = value;
+
+                if (tsCollider.IsBodyInitialized) {
+                    tsCollider.Body.TSLinearDrag = _linearDrag;
+                }
+            }
+        }
+
+        [SerializeField]
+        private FP _angularDrag = 0.05f;
+
+        /**
+         *  @brief Angular drag coeficient.
+         **/
+        public FP angularDrag {
+            get {
+                if (tsCollider.IsBodyInitialized) {
+                    return tsCollider.Body.TSAngularDrag;
+                }
+
+                return _angularDrag;
+            }
+
+            set {
+                _angularDrag = value;
+
+                if (tsCollider.IsBodyInitialized) {
+                    tsCollider.Body.TSAngularDrag = _angularDrag;
+                }
+            }
+        }
+
         /**
          *  @brief Interpolation mode that should be used. 
          **/
@@ -147,8 +195,8 @@ namespace TrueSync {
          *  @param force A {@link TSVector2} representing the force to be applied.
          *  @param position Indicates the location where the force should hit.
          **/
-        public void AddForce(TSVector2 force, TSVector2 position) {
-            AddForce(force, position, ForceMode.Impulse);
+        public void AddForceAtPosition(TSVector2 force, TSVector2 position) {
+            AddForceAtPosition(force, position, ForceMode.Impulse);
         }
 
         /**
@@ -157,12 +205,20 @@ namespace TrueSync {
          *  @param force A {@link TSVector2} representing the force to be applied.
          *  @param position Indicates the location where the force should hit.
          **/
-        public void AddForce(TSVector2 force, TSVector2 position, ForceMode mode) {
+        public void AddForceAtPosition(TSVector2 force, TSVector2 position, ForceMode mode) {
             if (mode == ForceMode.Force) {
                 tsCollider.Body.TSApplyForce(force, position);
             } else if (mode == ForceMode.Impulse) {
                 tsCollider.Body.TSApplyImpulse(force, position);
             }
+        }
+
+        /**
+         *  @brief Returns the velocity of the body at some position in world space. 
+         **/
+        public TSVector2 GetPointVelocity(TSVector2 worldPoint) {
+            TSVector directionPoint = (position - tsCollider.Body.TSPosition).ToTSVector();
+            return TSVector.Cross(new TSVector(0, 0, tsCollider.Body.TSAngularVelocity), directionPoint).ToTSVector2() + tsCollider.Body.TSLinearVelocity;
         }
 
         /**

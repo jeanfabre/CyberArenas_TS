@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace TrueSync {
     /**
@@ -25,10 +26,29 @@ namespace TrueSync {
             protected set { shape = value; }
         }
 
+        [FormerlySerializedAs("isTrigger")]
+        [SerializeField]
+        private bool _isTrigger;
+
         /**
          *  @brief If it is only a trigger and doesn't interfere on collisions. 
          **/
-        public bool isTrigger;
+        public bool isTrigger {
+            get {
+                if (_body != null) {
+                    return _body.IsColliderOnly;
+                }
+
+                return _isTrigger;
+            }
+            set {
+                _isTrigger = value;
+
+                if (_body != null) {
+                    _body.IsColliderOnly = _isTrigger;
+                }
+            }
+        }
 
         /**
          *  @brief Simulated material. 
@@ -137,10 +157,8 @@ namespace TrueSync {
             }
 
             if (tsMaterial != null) {
-                newBody.Material = new BodyMaterial();
-                newBody.Material.KineticFriction = tsMaterial.friction;
-                newBody.Material.StaticFriction = tsMaterial.friction;
-                newBody.Material.Restitution = tsMaterial.restitution;
+                newBody.TSFriction = tsMaterial.friction;
+                newBody.TSRestitution = tsMaterial.friction;
             }
 
             newBody.IsColliderOnly = isTrigger;
@@ -148,10 +166,7 @@ namespace TrueSync {
 
             bool isStatic = tsRigidBody == null || tsRigidBody.isKinematic;
 
-            if (isStatic) {
-                newBody.AffectedByGravity = false;
-                newBody.IsStatic = true;
-            } else if (tsRigidBody != null) {
+            if (tsRigidBody != null) {
                 newBody.AffectedByGravity = tsRigidBody.useGravity;
 
                 if (tsRigidBody.mass <= 0) {
@@ -159,8 +174,15 @@ namespace TrueSync {
                 }
 
                 newBody.Mass = tsRigidBody.mass;
+                newBody.TSLinearDrag = tsRigidBody.drag;
+                newBody.TSAngularDrag = tsRigidBody.angularDrag;
             } else {
                 newBody.SetMassProperties();
+            }
+
+            if (isStatic) {
+                newBody.AffectedByGravity = false;
+                newBody.IsStatic = true;
             }
 
             _body = newBody;

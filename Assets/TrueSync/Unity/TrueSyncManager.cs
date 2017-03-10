@@ -51,7 +51,7 @@ namespace TrueSync {
         /**
          * @brief A list of {@link TrueSyncBehaviour} not linked to any player.
          **/
-        private List<TrueSyncManagedBehaviour> generalBehaviours;
+        private List<TrueSyncManagedBehaviour> generalBehaviours = new List<TrueSyncManagedBehaviour>();
 
         /**
          * @brief A dictionary holding a list of {@link TrueSyncBehaviour} belonging to each player.
@@ -202,7 +202,7 @@ namespace TrueSync {
             TrueSyncConfig currentConfig = ActiveConfig;
             lockedTimeStep = currentConfig.lockedTimeStep;
 
-            StateTracker.Init();
+            StateTracker.Init(currentConfig.rollbackWindow);
 
             if (currentConfig.physics2DEnabled || currentConfig.physics3DEnabled) {
                 PhysicsManager.New(currentConfig);
@@ -262,15 +262,16 @@ namespace TrueSync {
                     List<PhotonPlayer> players = new List<PhotonPlayer>(PhotonNetwork.playerList);
                     players.Sort(UnityUtils.playerComparer);
 
-                    foreach (PhotonPlayer p in players) {
-                        lockstep.AddPlayer((byte)p.ID, p.NickName, p.IsLocal);
+                    for (int index = 0, length = players.Count; index < length; index++) {
+                        PhotonPlayer p = players[index];
+                        lockstep.AddPlayer((byte) p.ID, p.NickName, p.IsLocal);
                     }
                 }
             }
 
-            generalBehaviours = new List<TrueSyncManagedBehaviour>();
-            foreach (TrueSyncBehaviour tsb in FindObjectsOfType<TrueSyncBehaviour>()) {
-                generalBehaviours.Add(NewManagedBehavior(tsb));
+            TrueSyncBehaviour[] behavioursArray = FindObjectsOfType<TrueSyncBehaviour>();
+            for (int index = 0, length = behavioursArray.Length; index < length; index++) {
+                generalBehaviours.Add(NewManagedBehavior(behavioursArray[index]));
             }
 
             initBehaviors();
@@ -291,20 +292,31 @@ namespace TrueSync {
         private void initBehaviors() {
             behaviorsByPlayer = new Dictionary<byte, List<TrueSyncManagedBehaviour>>();
 
-            foreach (TSPlayer p in lockstep.Players.Values) {
+            var playersEnum = lockstep.Players.GetEnumerator();
+            while (playersEnum.MoveNext()) {
+                TSPlayer p = playersEnum.Current.Value;
+
                 List<TrueSyncManagedBehaviour> behaviorsInstatiated = new List<TrueSyncManagedBehaviour>();
 
-                foreach (GameObject prefab in playerPrefabs) {
+                for (int index = 0, length = playerPrefabs.Length; index < length; index++) {
+                    GameObject prefab = playerPrefabs[index];
+
                     GameObject prefabInst = Instantiate(prefab);
                     InitializeGameObject(prefabInst, prefabInst.transform.position.ToTSVector(), prefabInst.transform.rotation.ToTSQuaternion());
 
                     TrueSyncBehaviour[] behaviours = prefabInst.GetComponentsInChildren<TrueSyncBehaviour>();
-                    foreach (TrueSyncBehaviour behaviour in behaviours) {
+                    for (int index2 = 0, length2 = behaviours.Length; index2 < length2; index2++) {
+                        TrueSyncBehaviour behaviour = behaviours[index2];
+
                         behaviour.owner = p.playerInfo;
                         behaviour.localOwner = lockstep.LocalPlayer.playerInfo;
                         behaviour.numberOfPlayers = lockstep.Players.Count;
 
-                        behaviorsInstatiated.Add(NewManagedBehavior(behaviour));
+                        TrueSyncManagedBehaviour tsmb = NewManagedBehavior(behaviour);
+                        tsmb.owner = behaviour.owner;
+                        tsmb.localOwner = behaviour.localOwner;
+
+                        behaviorsInstatiated.Add(tsmb);
                     }
                 }
 
@@ -316,7 +328,10 @@ namespace TrueSync {
             List<TSPlayer> playersList = new List<TSPlayer>(lockstep.Players.Values);
             List<TrueSyncManagedBehaviour> itemsToRemove = new List<TrueSyncManagedBehaviour>();
 
-            foreach (TrueSyncManagedBehaviour tsmb in behaviours) {
+            var behavioursEnum = behaviours.GetEnumerator();
+            while (behavioursEnum.MoveNext()) {
+                TrueSyncManagedBehaviour tsmb = behavioursEnum.Current;
+
                 if (!(tsmb.trueSyncBehavior is TrueSyncBehaviour)) {
                     continue;
                 }
@@ -342,10 +357,13 @@ namespace TrueSync {
 
                 bh.localOwner = lockstep.LocalPlayer.playerInfo;
                 bh.numberOfPlayers = lockstep.Players.Count;
+
+                tsmb.owner = bh.owner;
+                tsmb.localOwner = bh.localOwner;
             }
 
-            foreach (TrueSyncManagedBehaviour bh in itemsToRemove) {
-                generalBehaviours.Remove(bh);
+            for (int index = 0, length = itemsToRemove.Count; index < length; index++) {
+                generalBehaviours.Remove(itemsToRemove[index]);
             }
         }
 
@@ -354,7 +372,9 @@ namespace TrueSync {
                 generalBehaviours.AddRange(queuedBehaviours);
                 initGeneralBehaviors(queuedBehaviours, true);
 
-                foreach (TrueSyncManagedBehaviour tsmb in queuedBehaviours) {
+                for (int index = 0, length = queuedBehaviours.Count; index < length; index++) {
+                    TrueSyncManagedBehaviour tsmb = queuedBehaviours[index];
+
                     tsmb.SetGameInfo(lockstep.LocalPlayer.playerInfo, lockstep.Players.Count);
                     tsmb.OnSyncedStart();
                 }
@@ -440,9 +460,15 @@ namespace TrueSync {
         public static GameObject SyncedInstantiate(GameObject prefab, TSVector position, TSQuaternion rotation) {
             if (instance != null && instance.lockstep != null) {
                 GameObject go = GameObject.Instantiate(prefab, position.ToVector(), rotation.ToQuaternion()) as GameObject;
-                AddGameObjectOnSafeMap(go);
 
-                foreach (MonoBehaviour bh in go.GetComponentsInChildren<MonoBehaviour>()) {
+                if (ReplayRecord.replayMode != ReplayMode.LOAD_REPLAY) {
+                    AddGameObjectOnSafeMap(go);
+                }
+
+                MonoBehaviour[] monoBehaviours = go.GetComponentsInChildren<MonoBehaviour>();
+                for (int index = 0, length = monoBehaviours.Length; index < length; index++) {
+                    MonoBehaviour bh = monoBehaviours[index];
+
                     if (bh is ITrueSyncBehaviour) {
                         instance.queuedBehaviours.Add(instance.NewManagedBehavior((ITrueSyncBehaviour)bh));
                     }
@@ -457,6 +483,7 @@ namespace TrueSync {
         }
 
         private static void AddGameObjectOnSafeMap(GameObject go) {
+
             Dictionary<int, List<GameObject>> safeMap = instance.gameOjectsSafeMap;
 
             int currentTick = TrueSyncManager.Ticks + 1;
@@ -494,8 +521,8 @@ namespace TrueSync {
         private static void InitializeGameObject(GameObject go, TSVector position, TSQuaternion rotation) {
             ICollider[] tsColliders = go.GetComponentsInChildren<ICollider>();
             if (tsColliders != null) {
-                foreach (ICollider tsCollider in tsColliders) {
-                    PhysicsManager.instance.AddBody(tsCollider);
+                for (int index = 0, length = tsColliders.Length; index < length; index++) {
+                    PhysicsManager.instance.AddBody(tsColliders[index]);
                 }
             }
 
@@ -509,7 +536,9 @@ namespace TrueSync {
 
             TSTransform[] tsTransforms = go.GetComponentsInChildren<TSTransform>();
             if (tsTransforms != null) {
-                foreach (TSTransform tsTransform in tsTransforms) {
+                for (int index = 0, length = tsTransforms.Length; index < length; index++) {
+                    TSTransform tsTransform = tsTransforms[index];
+
                     if (tsTransform != rootTSTransform) {
                         tsTransform.Initialize();
                     }
@@ -526,7 +555,9 @@ namespace TrueSync {
 
             TSTransform2D[] tsTransforms2D = go.GetComponentsInChildren<TSTransform2D>();
             if (tsTransforms2D != null) {
-                foreach (TSTransform2D tsTransform2D in tsTransforms2D) {
+                for (int index = 0, length = tsTransforms2D.Length; index < length; index++) {
+                    TSTransform2D tsTransform2D = tsTransforms2D[index];
+
                     if (tsTransform2D != rootTSTransform2D) {
                         tsTransform2D.Initialize();
                     }
@@ -558,14 +589,16 @@ namespace TrueSync {
 
                 TSCollider[] tsColliders = gameObject.GetComponentsInChildren<TSCollider>();
                 if (tsColliders != null) {
-                    foreach (TSCollider tsCollider in tsColliders) {
+                    for (int index = 0, length = tsColliders.Length; index < length; index++) {
+                        TSCollider tsCollider = tsColliders[index];
                         DestroyTSRigidBody(tsCollider.gameObject, tsCollider.Body);
                     }
                 }
 
                 TSCollider2D[] tsColliders2D = gameObject.GetComponentsInChildren<TSCollider2D>();
                 if (tsColliders2D != null) {
-                    foreach (TSCollider2D tsCollider2D in tsColliders2D) {
+                    for (int index = 0, length = tsColliders2D.Length; index < length; index++) {
+                        TSCollider2D tsCollider2D = tsColliders2D[index];
                         DestroyTSRigidBody(tsCollider2D.gameObject, tsCollider2D.Body);
                     }
                 }
@@ -576,7 +609,11 @@ namespace TrueSync {
          * @brief Disables 'OnSyncedInput' and 'OnSyncUpdate' calls to every {@link ITrueSyncBehaviour} attached.
          **/
         public static void SyncedDisableBehaviour(GameObject gameObject) {
-            foreach (MonoBehaviour tsb in gameObject.GetComponentsInChildren<MonoBehaviour>()) {
+            MonoBehaviour[] monoBehaviours = gameObject.GetComponentsInChildren<MonoBehaviour>();
+
+            for (int index = 0, length = monoBehaviours.Length; index < length; index++) {
+                MonoBehaviour tsb = monoBehaviours[index];
+
                 if (tsb is ITrueSyncBehaviour && instance.mapBehaviorToManagedBehavior.ContainsKey((ITrueSyncBehaviour)tsb)) {
                     instance.mapBehaviorToManagedBehavior[(ITrueSyncBehaviour)tsb].disabled = true;
                 }
@@ -622,12 +659,17 @@ namespace TrueSync {
          **/
         public static void RemovePlayer(int playerId) {
             if (instance != null && instance.lockstep != null) {
-                foreach (TrueSyncManagedBehaviour tsmb in instance.behaviorsByPlayer[(byte)playerId]) {
+                List<TrueSyncManagedBehaviour> behaviorsList = instance.behaviorsByPlayer[(byte)playerId];
+
+                for (int index = 0, length = behaviorsList.Count; index < length; index++) {
+                    TrueSyncManagedBehaviour tsmb = behaviorsList[index];
                     tsmb.disabled = true;
 
                     TSCollider[] tsColliders = ((TrueSyncBehaviour)tsmb.trueSyncBehavior).gameObject.GetComponentsInChildren<TSCollider>();
                     if (tsColliders != null) {
-                        foreach (TSCollider tsCollider in tsColliders) {
+                        for (int index2 = 0, length2 = tsColliders.Length; index2 < length2; index2++) {
+                            TSCollider tsCollider = tsColliders[index2];
+
                             if (!tsCollider.Body.TSDisabled) {
                                 DestroyTSRigidBody(tsCollider.gameObject, tsCollider.Body);
                             }
@@ -636,7 +678,9 @@ namespace TrueSync {
 
                     TSCollider2D[] tsCollider2Ds = ((TrueSyncBehaviour)tsmb.trueSyncBehavior).gameObject.GetComponentsInChildren<TSCollider2D>();
                     if (tsCollider2Ds != null) {
-                        foreach (TSCollider2D tsCollider2D in tsCollider2Ds) {
+                        for (int index2 = 0, length2 = tsCollider2Ds.Length; index2 < length2; index2++) {
+                            TSCollider2D tsCollider2D = tsCollider2Ds[index2];
+
                             if (!tsCollider2D.Body.TSDisabled) {
                                 DestroyTSRigidBody(tsCollider2D.gameObject, tsCollider2D.Body);
                             }
@@ -665,7 +709,10 @@ namespace TrueSync {
             TrueSyncInput.CurrentInputData = playerInputData;
 
             if (behaviorsByPlayer.ContainsKey(playerInputData.ownerID)) {
-                foreach (TrueSyncManagedBehaviour bh in behaviorsByPlayer[playerInputData.ownerID]) {
+                List<TrueSyncManagedBehaviour> managedBehavioursByPlayer = behaviorsByPlayer[playerInputData.ownerID];
+                for (int index = 0, length = managedBehavioursByPlayer.Count; index < length; index++) {
+                    TrueSyncManagedBehaviour bh = managedBehavioursByPlayer[index];
+
                     if (bh != null && !bh.disabled) {
                         bh.OnSyncedInput();
                     }
@@ -675,23 +722,30 @@ namespace TrueSync {
             TrueSyncInput.CurrentInputData = null;
         }
 
-        void OnStepUpdate(InputData[] allInputData) {
-            CheckGameObjectsSafeMap();
+        void OnStepUpdate(List<InputData> allInputData) {
+            if (ReplayRecord.replayMode != ReplayMode.LOAD_REPLAY) {
+                CheckGameObjectsSafeMap();
+            }
 
-            TrueSyncInput.GetAllInputs().Clear();
+            TrueSyncInput.SetAllInputs(null);
 
-            if (generalBehaviours != null) {
-                foreach (TrueSyncManagedBehaviour bh in generalBehaviours) {
-                    if (bh != null && !bh.disabled) {
-                        bh.OnPreSyncedUpdate();
-                        instance.scheduler.UpdateAllCoroutines();
-                    }
+            for (int index = 0, length = generalBehaviours.Count; index < length; index++) {
+                TrueSyncManagedBehaviour bh = generalBehaviours[index];
+
+                if (bh != null && !bh.disabled) {
+                    bh.OnPreSyncedUpdate();
+                    instance.scheduler.UpdateAllCoroutines();
                 }
             }
 
-            foreach (InputData playerInputData in allInputData) {
+            for (int index = 0, length = allInputData.Count; index < length; index++) {
+                InputData playerInputData = allInputData[index];
+
                 if (behaviorsByPlayer.ContainsKey(playerInputData.ownerID)) {
-                    foreach (TrueSyncManagedBehaviour bh in behaviorsByPlayer[playerInputData.ownerID]) {
+                    List<TrueSyncManagedBehaviour> managedBehavioursByPlayer = behaviorsByPlayer[playerInputData.ownerID];
+                    for (int index2 = 0, length2 = managedBehavioursByPlayer.Count; index2 < length2; index2++) {
+                        TrueSyncManagedBehaviour bh = managedBehavioursByPlayer[index2];
+
                         if (bh != null && !bh.disabled) {
                             bh.OnPreSyncedUpdate();
                             instance.scheduler.UpdateAllCoroutines();
@@ -700,23 +754,28 @@ namespace TrueSync {
                 }
             }
 
-            TrueSyncInput.GetAllInputs().AddRange(allInputData);
+            TrueSyncInput.SetAllInputs(allInputData);
 
             TrueSyncInput.CurrentSimulationData = null;
-            if (generalBehaviours != null) {
-                foreach (TrueSyncManagedBehaviour bh in generalBehaviours) {
-                    if (bh != null && !bh.disabled) {
-                        bh.OnSyncedUpdate();
-                        instance.scheduler.UpdateAllCoroutines();
-                    }
+            for (int index = 0, length = generalBehaviours.Count; index < length; index++) {
+                TrueSyncManagedBehaviour bh = generalBehaviours[index];
+
+                if (bh != null && !bh.disabled) {
+                    bh.OnSyncedUpdate();
+                    instance.scheduler.UpdateAllCoroutines();
                 }
             }
 
-            foreach (InputData playerInputData in allInputData) {
+            for (int index = 0, length = allInputData.Count; index < length; index++) {
+                InputData playerInputData = allInputData[index];
+
                 if (behaviorsByPlayer.ContainsKey(playerInputData.ownerID)) {
                     TrueSyncInput.CurrentSimulationData = playerInputData;
 
-                    foreach (TrueSyncManagedBehaviour bh in behaviorsByPlayer[playerInputData.ownerID]) {
+                    List<TrueSyncManagedBehaviour> managedBehavioursByPlayer = behaviorsByPlayer[playerInputData.ownerID];
+                    for (int index2 = 0, length2 = managedBehavioursByPlayer.Count; index2 < length2; index2++) {
+                        TrueSyncManagedBehaviour bh = managedBehavioursByPlayer[index2];
+
                         if (bh != null && !bh.disabled) {
                             bh.OnSyncedUpdate();
                             instance.scheduler.UpdateAllCoroutines();
@@ -738,7 +797,9 @@ namespace TrueSync {
                 RemoveFromTSMBList(queuedBehaviours, behavioursToRemove);
                 RemoveFromTSMBList(generalBehaviours, behavioursToRemove);
 
-                foreach (List<TrueSyncManagedBehaviour> listBh in behaviorsByPlayer.Values) {
+                var behaviorsByPlayerEnum = behaviorsByPlayer.GetEnumerator();
+                while (behaviorsByPlayerEnum.MoveNext()) {
+                    List<TrueSyncManagedBehaviour> listBh = behaviorsByPlayerEnum.Current.Value;
                     RemoveFromTSMBList(listBh, behavioursToRemove);
                 }
             }
@@ -746,56 +807,53 @@ namespace TrueSync {
 
         private void RemoveFromTSMBList(List<TrueSyncManagedBehaviour> tsmbList, List<TrueSyncBehaviour> behaviours) {
             List<TrueSyncManagedBehaviour> toRemove = new List<TrueSyncManagedBehaviour>();
-            foreach (TrueSyncManagedBehaviour tsmb in tsmbList) {
+            for (int index = 0, length = tsmbList.Count; index < length; index++) {
+                TrueSyncManagedBehaviour tsmb = tsmbList[index];
+
                 if ((tsmb.trueSyncBehavior is TrueSyncBehaviour) && behaviours.Contains((TrueSyncBehaviour)tsmb.trueSyncBehavior)) {
                     toRemove.Add(tsmb);
                 }
             }
 
-            foreach (TrueSyncManagedBehaviour tsmb in toRemove) {
+            for (int index = 0, length = toRemove.Count; index < length; index++) {
+                TrueSyncManagedBehaviour tsmb = toRemove[index];
                 tsmbList.Remove(tsmb);
             }
         }
 
+        /** 
+         * @brief Clean up references to be collected by gc.
+         **/
+        public static void CleanUp() {
+            ResourcePool.CleanUpAll();
+            StateTracker.CleanUp();
+            instance = null;
+        }
+
         void OnPlayerDisconnection(byte playerId) {
-            GenericOnGameCall("TrueSyncManagedBehaviour.OnPlayerDisconnection", new object[] { (int)playerId });
+            TrueSyncManagedBehaviour.OnPlayerDisconnection(generalBehaviours, behaviorsByPlayer, playerId);
         }
 
         void OnGameStarted() {
-            GenericOnGameCall("TrueSyncManagedBehaviour.OnSyncedStart");
+            TrueSyncManagedBehaviour.OnGameStarted(generalBehaviours, behaviorsByPlayer);
+            instance.scheduler.UpdateAllCoroutines();
+
             CheckQueuedBehaviours();
         }
 
         void OnGamePaused() {
-            GenericOnGameCall("TrueSyncManagedBehaviour.OnGamePaused");
+            TrueSyncManagedBehaviour.OnGamePaused(generalBehaviours, behaviorsByPlayer);
+            instance.scheduler.UpdateAllCoroutines();
         }
 
         void OnGameUnPaused() {
-            GenericOnGameCall("TrueSyncManagedBehaviour.OnGameUnPaused");
+            TrueSyncManagedBehaviour.OnGameUnPaused(generalBehaviours, behaviorsByPlayer);
+            instance.scheduler.UpdateAllCoroutines();
         }
 
         void OnGameEnded() {
-            GenericOnGameCall("TrueSyncManagedBehaviour.OnGameEnded");
-        }
-
-        void GenericOnGameCall(string callbackName) {
-            GenericOnGameCall(callbackName, null);
-        }
-
-        void GenericOnGameCall(string callbackName, object[] parameter) {
-            if (generalBehaviours != null) {
-                foreach (TrueSyncManagedBehaviour bh in generalBehaviours) {
-                    UnityUtils.methodInfoByName[callbackName].Invoke(bh, parameter);
-                    instance.scheduler.UpdateAllCoroutines();
-                }
-            }
-
-            foreach (List<TrueSyncManagedBehaviour> behaviors in behaviorsByPlayer.Values) {
-                foreach (TrueSyncManagedBehaviour bh in behaviors) {
-                    UnityUtils.methodInfoByName[callbackName].Invoke(bh, parameter);
-                    instance.scheduler.UpdateAllCoroutines();
-                }
-            }
+            TrueSyncManagedBehaviour.OnGameEnded(generalBehaviours, behaviorsByPlayer);
+            instance.scheduler.UpdateAllCoroutines();
         }
 
         void OnApplicationQuit() {
