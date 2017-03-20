@@ -66,7 +66,7 @@ public class PlayerCubeBehavior : TrueSyncBehaviour {
 		}
 
 		if (_ship == null) {
-			_ship = (GameObject)Instantiate (Ships [shipIndex]);
+			_ship = (GameObject)Instantiate<GameObject>(Ships [shipIndex]);
 			_ship.transform.SetParent (this.transform, true);
 			_ship.transform.localPosition = Vector3.zero;
 			_ship.transform.rotation = Quaternion.Euler (90, -90, 90);
