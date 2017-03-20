@@ -31,11 +31,15 @@ public class PlayerCubeBehavior : TrueSyncBehaviour {
 
 	public GameObject BulletPrefab;
 
+
+	public GameObject[] Ships;
+
     /**
     * @brief Player's movement speed.
     **/
     //public int SpeedFactor = 5;
 	public int AngularVelocityFactor = 5;
+
 
 	/// <summary>
 	/// The last fire frame.
@@ -48,13 +52,24 @@ public class PlayerCubeBehavior : TrueSyncBehaviour {
 	 **/
 	private void ResetPosition () {
 		// Sets sprite and animator controller based on player's id
+		int shipIndex = 0;
 		if (owner.Id == 1) {
 
-			tsRigidBody.position = new TSVector(1,0,0);
+			shipIndex = 1;
+			tsRigidBody.position = new TSVector(40,0,0);
+
+
 		} else {
 
-			tsRigidBody.position = new TSVector(-1, 0,0);
+			tsRigidBody.position = new TSVector(-40, 0,0);
 		}
+
+		GameObject _ship = (GameObject)Instantiate (Ships [shipIndex]);
+		_ship.transform.SetParent (this.transform, true);
+		_ship.transform.localPosition = Vector3.zero;
+		_ship.transform.rotation = Quaternion.Euler (90, -90, 90);
+
+
 		TSVector velocity = tsRigidBody.velocity;
 		velocity.x = velocity.y = (FP)0;
 		tsRigidBody.velocity = velocity;
@@ -125,7 +140,7 @@ public class PlayerCubeBehavior : TrueSyncBehaviour {
 	void Fire()
 	{
 		if (lastFireFrame != Time.frameCount) {
-			TrueSyncManager.SyncedInstantiate (this.BulletPrefab, tsTransform.position + tsTransform.up * (FP)3f, tsTransform.rotation);
+			TrueSyncManager.SyncedInstantiate (this.BulletPrefab, tsTransform.position + tsTransform.up * (FP)tsTransform.scale.x, tsTransform.rotation);
 			lastFireFrame = Time.frameCount;
 		}
 

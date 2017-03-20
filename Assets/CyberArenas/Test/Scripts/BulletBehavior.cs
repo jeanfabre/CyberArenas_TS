@@ -24,6 +24,7 @@ public class BulletBehavior : TrueSyncBehaviour {
     * @brief Initial setup when game is started.
     **/
 	public override void OnSyncedStart () {
+		this.tsTransform.scale = TSVector.one*(FP)2f;
 		tsRigidBody = GetComponent<TSRigidBody>();
 
 		tsRigidBody.velocity = tsRigidBody.tsTransform.up * (FP)SpeedFactor;
