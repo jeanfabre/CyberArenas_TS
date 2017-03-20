@@ -46,6 +46,7 @@ public class PlayerCubeBehavior : TrueSyncBehaviour {
 	/// </summary>
 	int lastFireFrame;
 
+	GameObject _ship;
 	/**
 	 * Added by Aaron to reuse code
 	 * Resets position and stops motion 
@@ -64,11 +65,12 @@ public class PlayerCubeBehavior : TrueSyncBehaviour {
 			tsRigidBody.position = new TSVector(-40, 0,0);
 		}
 
-		GameObject _ship = (GameObject)Instantiate (Ships [shipIndex]);
-		_ship.transform.SetParent (this.transform, true);
-		_ship.transform.localPosition = Vector3.zero;
-		_ship.transform.rotation = Quaternion.Euler (90, -90, 90);
-
+		if (_ship == null) {
+			_ship = (GameObject)Instantiate (Ships [shipIndex]);
+			_ship.transform.SetParent (this.transform, true);
+			_ship.transform.localPosition = Vector3.zero;
+			_ship.transform.rotation = Quaternion.Euler (90, -90, 90);
+		}
 
 		TSVector velocity = tsRigidBody.velocity;
 		velocity.x = velocity.y = (FP)0;
