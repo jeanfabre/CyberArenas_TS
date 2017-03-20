@@ -2,6 +2,7 @@
 using UnityEngine.UI;
 using System.Collections;
 using TrueSync;
+using TrueSync.Physics3D;
 
 public class LockPlayer : TrueSyncBehaviour {
 

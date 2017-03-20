@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using System.Collections.Generic;
 using System;
+using TrueSync.Physics2D;
 
 namespace TrueSync {
 
@@ -45,10 +46,10 @@ namespace TrueSync {
         public void Init() {
             ChecksumExtractor.Init(this);
 
-            Physics2D.Settings.ContinuousPhysics = SpeculativeContacts;
+            Settings.ContinuousPhysics = SpeculativeContacts;
 
             world = new TrueSync.Physics2D.World(new TSVector2(Gravity.x, Gravity.y));
-            Physics2D.ContactManager.physicsManager = this;
+            ContactManager.physicsManager = this;
 
             world.BodyRemoved += OnRemovedRigidBody;
             world.ContactManager.BeginContact += CollisionEnter;

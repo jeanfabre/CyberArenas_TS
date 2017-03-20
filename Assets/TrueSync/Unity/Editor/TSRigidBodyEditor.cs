@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using UnityEditor;
+using TrueSync.Physics3D;
 
 namespace TrueSync {
 

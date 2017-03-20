@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using UnityEngine.Serialization;
+using TrueSync.Physics3D;
 
 namespace TrueSync {
 
@@ -265,7 +266,6 @@ namespace TrueSync {
          **/
         public void LookAt(TSVector target) {
             rotation = TSQuaternion.CreateFromMatrix(TSMatrix.CreateFromLookAt(position, target));
-            tsCollider.Body.TSUpdate();
         }
 
         /**

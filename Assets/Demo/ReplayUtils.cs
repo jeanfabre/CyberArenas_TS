@@ -26,12 +26,12 @@ public class ReplayUtils {
     /**
     * @brief Saves the provided replay.
     **/
-    private static void SaveRecord(string replayRecord, int numberOfPlayers) {
+    private static void SaveRecord(byte[] replayRecord, int numberOfPlayers) {
         string folderPath = CheckReplayFolder().FullName;
 
         #if !UNITY_WEBPLAYER
         try {
-            File.WriteAllText(string.Format("{0}/replay_{1}_{2}.tsr", folderPath, DateTime.Now.Ticks, numberOfPlayers), replayRecord);
+            File.WriteAllBytes(string.Format("{0}/replay_{1}_{2}.tsr", folderPath, DateTime.Now.Ticks, numberOfPlayers), replayRecord);
         } catch (Exception) {
         }
         #endif
@@ -65,7 +65,7 @@ public class ReplayUtils {
 
         #if !UNITY_WEBPLAYER
         try {
-            string replayContent = File.ReadAllText(fileFullName);
+            byte[] replayContent = File.ReadAllBytes(fileFullName);
             replay = ReplayRecord.GetReplayRecord(replayContent);
         } catch (Exception) {
         }
@@ -123,11 +123,6 @@ public class ReplayRecordInfo : IComparable<ReplayRecordInfo> {
     public string fileFullName;
 
     /**
-     * @brief Related {@link ReplayRecord}.
-     **/
-    private ReplayRecord replayRecord;
-
-    /**
      * @brief Number of players.
      **/
     public int numberOfPlayers = 1;
@@ -147,12 +142,8 @@ public class ReplayRecordInfo : IComparable<ReplayRecordInfo> {
     /**
      * @brief Returns the related {@link ReplayRecord}.
      **/
-    public ReplayRecord Load() {
-        if (replayRecord == null) {
-            replayRecord = ReplayUtils.GetReplayRecord(fileFullName);
-        }
-
-        return replayRecord;
+    public void Load() {
+        ReplayRecord.replayToLoad = ReplayUtils.GetReplayRecord(fileFullName);
     }
 
     /**

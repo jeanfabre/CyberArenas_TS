@@ -1,3 +1,9 @@
+# 0.1.1.0
+- Exposed source code: physics engines and math library
+- New folder structure in "TruSync" folder
+- Fixed serialization bug on replay record (it is not compatible anymore with replays from old versions)
+- Moved classes related to 3d physics to the namespace "TrueSync.Physics3D"
+
 # 0.1.0.9
 - Fixed TSPolygonCollider2D to allow concave shapes
 - Fixed string length limitation (256 bytes) on TrueSyncInput

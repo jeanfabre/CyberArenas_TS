@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using UnityEngine.Serialization;
+using TrueSync.Physics3D;
 
 namespace TrueSync {
     /**

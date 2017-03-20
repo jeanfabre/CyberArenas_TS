@@ -70,6 +70,8 @@ namespace TrueSync {
 
         private Dictionary<ITrueSyncBehaviour, TrueSyncManagedBehaviour> mapBehaviorToManagedBehavior = new Dictionary<ITrueSyncBehaviour, TrueSyncManagedBehaviour>();
 
+        private FP time = 0;
+
         /**
          * @brief Returns the deltaTime between two simulation calls.
          **/
@@ -79,7 +81,7 @@ namespace TrueSync {
                     return 0;
                 }
 
-                return instance.lockstep.deltaTime;
+                return instance.lockedTimeStep;
             }
         }
 
@@ -92,7 +94,7 @@ namespace TrueSync {
                     return 0;
                 }
 
-                return instance.lockstep.time;
+                return instance.time;
             }
         }
 
@@ -203,26 +205,20 @@ namespace TrueSync {
             lockedTimeStep = currentConfig.lockedTimeStep;
 
             StateTracker.Init(currentConfig.rollbackWindow);
+            TSRandom.Init();
 
             if (currentConfig.physics2DEnabled || currentConfig.physics3DEnabled) {
                 PhysicsManager.New(currentConfig);
                 PhysicsManager.instance.LockedTimeStep = lockedTimeStep;
                 PhysicsManager.instance.Init();
             }
+
+            StateTracker.AddTracking(this, "time");
         }
 
         void Start() {
             instance = this;
             Application.runInBackground = true;
-
-            if (ReplayRecord.replayMode == ReplayMode.LOAD_REPLAY) {
-                ReplayRecord replayRecord = ReplayRecord.replayToLoad;
-                if (replayRecord == null) {
-                    Debug.LogError("Replay Record can't be loaded");
-                    gameObject.SetActive(false);
-                    return;
-                }
-            }
 
             ICommunicator communicator = null;
             if (!PhotonNetwork.connected || !PhotonNetwork.inRoom) {
@@ -234,7 +230,7 @@ namespace TrueSync {
             TrueSyncConfig activeConfig = ActiveConfig;
 
             lockstep = AbstractLockstep.NewInstance(
-                lockedTimeStep,
+                lockedTimeStep.AsFloat(),
                 communicator,
                 PhysicsManager.instance,
                 activeConfig.syncWindow,
@@ -246,8 +242,22 @@ namespace TrueSync {
                 OnGameEnded,
                 OnPlayerDisconnection,
                 OnStepUpdate,
-                GetLocalData
+                GetLocalData,
+                ProvideInputData
             );
+
+            if (ReplayRecord.replayMode == ReplayMode.LOAD_REPLAY) {
+                ReplayPicker.replayToLoad.Load();
+
+                ReplayRecord replayRecord = ReplayRecord.replayToLoad;
+                if (replayRecord == null) {
+                    Debug.LogError("Replay Record can't be loaded");
+                    gameObject.SetActive(false);
+                    return;
+                } else {
+                    lockstep.ReplayRecord = replayRecord;
+                }
+            }
 
             if (activeConfig.showStats) {
                 this.gameObject.AddComponent<TrueSyncStats>().Lockstep = lockstep;
@@ -705,8 +715,12 @@ namespace TrueSync {
             }
         }
 
-        void GetLocalData(InputData playerInputData) {
-            TrueSyncInput.CurrentInputData = playerInputData;
+        InputDataBase ProvideInputData() {
+            return new InputData();
+        }
+
+        void GetLocalData(InputDataBase playerInputData) {
+            TrueSyncInput.CurrentInputData = (InputData) playerInputData;
 
             if (behaviorsByPlayer.ContainsKey(playerInputData.ownerID)) {
                 List<TrueSyncManagedBehaviour> managedBehavioursByPlayer = behaviorsByPlayer[playerInputData.ownerID];
@@ -722,7 +736,9 @@ namespace TrueSync {
             TrueSyncInput.CurrentInputData = null;
         }
 
-        void OnStepUpdate(List<InputData> allInputData) {
+        void OnStepUpdate(List<InputDataBase> allInputData) {
+            time += lockedTimeStep;
+
             if (ReplayRecord.replayMode != ReplayMode.LOAD_REPLAY) {
                 CheckGameObjectsSafeMap();
             }
@@ -739,7 +755,7 @@ namespace TrueSync {
             }
 
             for (int index = 0, length = allInputData.Count; index < length; index++) {
-                InputData playerInputData = allInputData[index];
+                InputDataBase playerInputData = allInputData[index];
 
                 if (behaviorsByPlayer.ContainsKey(playerInputData.ownerID)) {
                     List<TrueSyncManagedBehaviour> managedBehavioursByPlayer = behaviorsByPlayer[playerInputData.ownerID];
@@ -767,10 +783,10 @@ namespace TrueSync {
             }
 
             for (int index = 0, length = allInputData.Count; index < length; index++) {
-                InputData playerInputData = allInputData[index];
+                InputDataBase playerInputData = allInputData[index];
 
                 if (behaviorsByPlayer.ContainsKey(playerInputData.ownerID)) {
-                    TrueSyncInput.CurrentSimulationData = playerInputData;
+                    TrueSyncInput.CurrentSimulationData = (InputData) playerInputData;
 
                     List<TrueSyncManagedBehaviour> managedBehavioursByPlayer = behaviorsByPlayer[playerInputData.ownerID];
                     for (int index2 = 0, length2 = managedBehavioursByPlayer.Count; index2 < length2; index2++) {

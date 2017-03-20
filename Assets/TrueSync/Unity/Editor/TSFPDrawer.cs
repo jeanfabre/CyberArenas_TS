@@ -9,22 +9,14 @@ namespace TrueSync {
 
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label) {
             EditorGUI.BeginProperty(position, label, property);
-            EditorGUI.BeginChangeCheck();
 
-            SerializedProperty serializedValueProperty = property.FindPropertyRelative("_serializedValue");
-            string value = serializedValueProperty.stringValue;
+            var rawProp = property.FindPropertyRelative("_serializedValue");
 
-            FP fpValue = FP.Zero;
-
-            if (value != "") {
-                fpValue = FP.FromRaw(long.Parse(value));
-            }
-
+            FP fpValue = FP.FromRaw(rawProp.longValue);
             fpValue = EditorGUI.FloatField(position, label, (float)fpValue);
 
-            if (EditorGUI.EndChangeCheck()) {
-                serializedValueProperty.stringValue = fpValue.RawValue.ToString();
-            }
+            rawProp.longValue = fpValue.RawValue;
+            EditorUtility.SetDirty(rawProp.serializedObject.targetObject);
 
             EditorGUI.EndProperty();
         }

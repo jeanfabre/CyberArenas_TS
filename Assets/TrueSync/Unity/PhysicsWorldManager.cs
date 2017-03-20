@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using System.Collections.Generic;
 using System;
+using TrueSync.Physics3D;
 
 namespace TrueSync {
 
@@ -73,7 +74,7 @@ namespace TrueSync {
          *  @brief Goes one step further on the physics simulation.
          **/
         public void UpdateStep() {
-            world.Step(LockedTimeStep, false);
+            world.Step(LockedTimeStep);
         }
 
         /**
