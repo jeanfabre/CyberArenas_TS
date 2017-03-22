@@ -59,12 +59,12 @@ public class PlayerCubeBehavior : TrueSyncBehaviour {
 		if (owner.Id == 1) {
 
 			shipIndex = 1;
-			tsRigidBody.position = new TSVector(40,0,0);
+			tsRigidBody.position = new TSVector(30,0,0);
 
 
 		} else {
 
-			tsRigidBody.position = new TSVector(-40, 0,0);
+			tsRigidBody.position = new TSVector(-30, 0,0);
 		}
 
 		//this.transform.localScale = new Vector3(1f,1f,1f);
