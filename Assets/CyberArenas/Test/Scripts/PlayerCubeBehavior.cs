@@ -52,6 +52,8 @@ public class PlayerCubeBehavior : TrueSyncBehaviour {
 	 * Resets position and stops motion 
 	 **/
 	private void ResetPosition () {
+		
+
 		// Sets sprite and animator controller based on player's id
 		int shipIndex = 0;
 		if (owner.Id == 1) {
@@ -65,9 +67,17 @@ public class PlayerCubeBehavior : TrueSyncBehaviour {
 			tsRigidBody.position = new TSVector(-40, 0,0);
 		}
 
+		//this.transform.localScale = new Vector3(1f,1f,1f);
+
+		Debug.Log (owner.Id);
+
 		if (_ship == null) {
-			_ship = (GameObject)Instantiate<GameObject>(Ships [shipIndex]);
+			GameObject _test = Ships [shipIndex];
+			Debug.Log(_test);
+			_ship = (GameObject)Instantiate(_test);
+			_ship.transform.parent = this.transform;
 			_ship.transform.SetParent (this.transform, true);
+			//_ship.transform.localScale = Vector3.one;
 			_ship.transform.localPosition = Vector3.zero;
 			_ship.transform.rotation = Quaternion.Euler (90, -90, 90);
 		}
@@ -142,7 +152,7 @@ public class PlayerCubeBehavior : TrueSyncBehaviour {
 	void Fire()
 	{
 		if (lastFireFrame != Time.frameCount) {
-			TrueSyncManager.SyncedInstantiate (this.BulletPrefab, tsTransform.position + tsTransform.up * (FP)tsTransform.scale.x, tsTransform.rotation);
+			TrueSyncManager.SyncedInstantiate (this.BulletPrefab, tsTransform.position + tsTransform.up * (FP)15, tsTransform.rotation);
 			lastFireFrame = Time.frameCount;
 		}
 
